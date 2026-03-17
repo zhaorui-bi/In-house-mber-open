@@ -141,6 +141,19 @@ Or:
 pip install setuptools
 ```
 
+If you see an OpenMM or ImmuneBuilder crash mentioning `NumPy 2.x`, `_ARRAY_API`, or a message like `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`, downgrade NumPy in the active environment:
+
+```bash
+conda install -n mber "numpy<2" --force-reinstall
+```
+
+If needed, reinstall the dependent binary packages afterward:
+
+```bash
+conda install -n mber openmm==8.0.0 pdbfixer==1.9 --force-reinstall
+python -m pip install --force-reinstall --no-cache-dir ImmuneBuilder
+```
+
 ## Citation
 
 If you use this code in your research, please cite our paper:

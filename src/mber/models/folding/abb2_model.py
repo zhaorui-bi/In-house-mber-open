@@ -1,11 +1,22 @@
 from .folding_model_bases import ProteinFoldingModel
 from typing import Any
 from pathlib import Path
+import numpy as np
 import torch
 
 
 class ABB2Model(ProteinFoldingModel):
     """ABodyBuilder2 implementation of the ProteinFoldingModel interface."""
+
+    @staticmethod
+    def _ensure_numpy_compatibility() -> None:
+        major_version = int(np.__version__.split(".", 1)[0])
+        if major_version >= 2:
+            raise RuntimeError(
+                "ABodyBuilder2 currently depends on the OpenMM/pdbfixer stack, "
+                "which is not compatible with NumPy 2.x in this environment. "
+                "Please install `numpy<2` in the active environment."
+            )
 
     def __init__(
         self,
@@ -13,6 +24,7 @@ class ABB2Model(ProteinFoldingModel):
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
     ):
         """Initialize ABodyBuilder2 model."""
+        self._ensure_numpy_compatibility()
         if model is None:
             try:
                 from ImmuneBuilder import ABodyBuilder2

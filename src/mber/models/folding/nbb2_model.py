@@ -2,12 +2,26 @@ from .folding_model_bases import ProteinFoldingModel
 import os
 from typing import Any, Optional, Union
 from pathlib import Path
+import numpy as np
 import torch
 from mber.utils.model_paths import resolve_nbb2_weights_dir
 
 
 class NBB2Model(ProteinFoldingModel):
     """NanoBodyBuilder2 implementation of the ProteinFoldingModel interface."""
+
+    @staticmethod
+    def _ensure_numpy_compatibility() -> None:
+        major_version = int(np.__version__.split(".", 1)[0])
+        if major_version >= 2:
+            raise RuntimeError(
+                "NanoBodyBuilder2 currently depends on the OpenMM/pdbfixer stack, "
+                "which is not compatible with NumPy 2.x in this environment. "
+                "Please install `numpy<2` in the active environment, for example:\n"
+                "  conda install -n mber 'numpy<2' --force-reinstall\n"
+                "or\n"
+                "  python -m pip install --force-reinstall --no-cache-dir 'numpy<2'"
+            )
 
     def __init__(
         self,
@@ -19,6 +33,7 @@ class NBB2Model(ProteinFoldingModel):
         # if weights dir does not exist, create it
         weights_dir = resolve_nbb2_weights_dir(weights_dir)
         os.makedirs(weights_dir, exist_ok=True)
+        self._ensure_numpy_compatibility()
 
         if model is None:
             try:
