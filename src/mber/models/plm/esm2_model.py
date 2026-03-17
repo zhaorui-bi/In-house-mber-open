@@ -11,14 +11,13 @@ from pathlib import Path
 import logomaker
 import matplotlib.pyplot as plt
 from .plm_model_bases import ProteinLanguageModel, download_from_s3
-
-tokenizer = AutoTokenizer.from_pretrained("facebook/esm2_t33_650M_UR50D", use_safetensors=False)
+from mber.utils.model_paths import (
+    configure_huggingface_environment,
+    resolve_hf_hub_cache_dir,
+)
 
 class ESM2Model(ProteinLanguageModel):
     """ESM2 implementation of the ProteinLanguageModel interface."""
-
-    id_to_tok = {v: k for k, v in tokenizer.get_vocab().items()}
-    tok_to_id = tokenizer.get_vocab()
     
     def __init__(
         self,
@@ -27,16 +26,31 @@ class ESM2Model(ProteinLanguageModel):
         tokenizer: Optional[PreTrainedTokenizerBase] = None,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
         checkpoint_path = None,
+        hf_home: Optional[str] = None,
     ):
         """Initialize ESM2 model and tokenizer."""
+        resolved_paths = configure_huggingface_environment(hf_home)
+        cache_dir = resolve_hf_hub_cache_dir(resolved_paths.hf_home)
+
         if model is None:
-            model = EsmForMaskedLM.from_pretrained(pretrained_model_name_or_path, use_safetensors=False)
+            model = EsmForMaskedLM.from_pretrained(
+                pretrained_model_name_or_path,
+                use_safetensors=False,
+                cache_dir=cache_dir,
+            )
         if tokenizer is None:
-            tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path, use_safetensors=False)
+            tokenizer = AutoTokenizer.from_pretrained(
+                pretrained_model_name_or_path,
+                use_safetensors=False,
+                cache_dir=cache_dir,
+            )
 
         self.model = model
         self.tokenizer = tokenizer
         self.device = device
+        self.hf_home = resolved_paths.hf_home
+        self.id_to_tok = {v: k for k, v in self.tokenizer.get_vocab().items()}
+        self.tok_to_id = self.tokenizer.get_vocab()
         self.model.to(device)
         
         # Cache amino acid tokens for sampling

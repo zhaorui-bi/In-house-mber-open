@@ -10,3 +10,18 @@ FOLDING_MODELS = {
     'esmfold': ESMFoldModel,
     # 'af2': AF2Model,
 }
+
+
+def get_folding_model_kwargs(
+    model_name: str,
+    af_params_dir: str | None = None,
+    nbb2_weights_dir: str | None = None,
+    hf_home: str | None = None,
+) -> dict:
+    if model_name == "nbb2":
+        return {"weights_dir": nbb2_weights_dir}
+    if model_name == "esmfold":
+        return {"hf_home": hf_home}
+    if model_name == "af2":
+        return {"data_dir": af_params_dir}
+    return {}

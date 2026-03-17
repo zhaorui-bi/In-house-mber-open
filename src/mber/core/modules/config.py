@@ -2,6 +2,11 @@ from dataclasses import dataclass, field
 from typing import List, Literal, Optional, Union
 from enum import Enum
 
+from mber.utils.model_paths import (
+    configure_huggingface_environment,
+    resolve_model_path_config,
+)
+
 
 @dataclass
 class BaseTemplateConfig:
@@ -111,5 +116,21 @@ class BaseEvaluationConfig:
 @dataclass
 class BaseEnvironmentConfig:
     """Base configuration for environment."""
-    af_params_dir: str = "~/.mber/af_params"
+    weights_root_dir: Optional[str] = None
+    af_params_dir: Optional[str] = None
+    nbb2_weights_dir: Optional[str] = None
+    hf_home: Optional[str] = None
     device: str = "cuda:0"
+
+    def __post_init__(self) -> None:
+        resolved_paths = resolve_model_path_config(
+            weights_root_dir=self.weights_root_dir,
+            af_params_dir=self.af_params_dir,
+            nbb2_weights_dir=self.nbb2_weights_dir,
+            hf_home=self.hf_home,
+        )
+        self.weights_root_dir = resolved_paths.weights_root_dir
+        self.af_params_dir = resolved_paths.af_params_dir
+        self.nbb2_weights_dir = resolved_paths.nbb2_weights_dir
+        self.hf_home = resolved_paths.hf_home
+        configure_huggingface_environment(self.hf_home)

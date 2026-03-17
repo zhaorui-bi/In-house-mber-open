@@ -6,6 +6,7 @@ import os
 from typing import Optional, List, Tuple, Union
 from pathlib import Path
 import torch
+from mber.utils.model_paths import resolve_nbb2_weights_dir
 
 
 class NBB2Model(ProteinFoldingModel):
@@ -15,11 +16,11 @@ class NBB2Model(ProteinFoldingModel):
         self,
         model: NanoBodyBuilder2 = None,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
-        weights_dir: Optional[str] = "~/.mber/nbb2_weights",
+        weights_dir: Optional[str] = None,
     ):
         """Initialize NanoBodyBuilder2 model."""
         # if weights dir does not exist, create it
-        weights_dir = os.path.expanduser(weights_dir)
+        weights_dir = resolve_nbb2_weights_dir(weights_dir)
         os.makedirs(weights_dir, exist_ok=True)
 
         if model is None:

@@ -13,8 +13,8 @@ from mber.core.modules.config import BaseTemplateConfig, BaseEnvironmentConfig
 from mber.core.data.state import DesignState, TemplateData
 from mber.core.sasa import find_hotspots, HotspotSelectionStrategy
 from mber.core.truncation import ProteinTruncator
-from mber.models.plm import PLM_MODELS
-from mber.models.folding import FOLDING_MODELS
+from mber.models.plm import PLM_MODELS, get_plm_model_kwargs
+from mber.models.folding import FOLDING_MODELS, get_folding_model_kwargs
 from mber.utils.pdb_utils import process_target, combine_structures, fold_binder
 from mber.utils.plm_utils import generate_sequence_from_mask, generate_bias_from_mask
 from mber.utils.timing_utils import timer, time_method
@@ -86,11 +86,24 @@ class BaseTemplateModule(BaseModule):
         """Initialize models needed for template processing."""
         with timer("Initialize ESM2 model", self._log):
             self._log(f"Initializing ESM2 model on {self.environment_config.device}")
-            self.esm_model = PLM_MODELS[self.template_config.plm_model](device=self.environment_config.device)
+            self.esm_model = PLM_MODELS[self.template_config.plm_model](
+                device=self.environment_config.device,
+                **get_plm_model_kwargs(
+                    self.template_config.plm_model,
+                    hf_home=self.environment_config.hf_home,
+                ),
+            )
         
         with timer("Initialize folding model", self._log, design_state.template_data.timings):
             self._log(f"Initializing template folding model: {self.template_config.folding_model}")
-            self.folding_model = FOLDING_MODELS[self.template_config.folding_model]()
+            self.folding_model = FOLDING_MODELS[self.template_config.folding_model](
+                **get_folding_model_kwargs(
+                    self.template_config.folding_model,
+                    af_params_dir=self.environment_config.af_params_dir,
+                    nbb2_weights_dir=self.environment_config.nbb2_weights_dir,
+                    hf_home=self.environment_config.hf_home,
+                ),
+            )
     
     @time_method()
     def _ensure_template_data(self, design_state: DesignState) -> None:

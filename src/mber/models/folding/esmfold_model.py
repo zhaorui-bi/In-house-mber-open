@@ -3,6 +3,10 @@ from pathlib import Path
 from typing import Optional, Union
 import torch
 import numpy as np
+from mber.utils.model_paths import (
+    configure_huggingface_environment,
+    resolve_hf_hub_cache_dir,
+)
 
 class ESMFoldModel(ProteinFoldingModel):
     """ESMFold implementation of the ProteinFoldingModel interface."""
@@ -14,6 +18,7 @@ class ESMFoldModel(ProteinFoldingModel):
         chunk_size: int = 128,
         num_recycles: int = 4,
         model = None,
+        hf_home: Optional[str] = None,
     ):
         """
         Initialize ESMFold model.
@@ -29,13 +34,20 @@ class ESMFoldModel(ProteinFoldingModel):
         self.device = device
         self.chunk_size = chunk_size
         self.num_recycles = num_recycles
+        resolved_paths = configure_huggingface_environment(hf_home)
+        self.hf_home = resolved_paths.hf_home
+        cache_dir = resolve_hf_hub_cache_dir(self.hf_home)
         
         # Load model if not provided
         if model is None:
             try:
                 from transformers import EsmForProteinFolding
                 print(f"Loading ESMFold model {model_name} on {device}...")
-                self.model = EsmForProteinFolding.from_pretrained(model_name, use_safetensors=False)
+                self.model = EsmForProteinFolding.from_pretrained(
+                    model_name,
+                    use_safetensors=False,
+                    cache_dir=cache_dir,
+                )
                 self.model.to(device)
             except ImportError:
                 raise ImportError("Failed to import EsmForProteinFolding from transformers. "

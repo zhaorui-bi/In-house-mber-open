@@ -4,6 +4,7 @@ from pathlib import Path
 from colabdesign import mk_afdesign_model, clear_mem
 import torch
 import re
+from mber.utils.model_paths import resolve_af_params_dir
 
 
 class AF2Model(ProteinFoldingModel):
@@ -13,16 +14,18 @@ class AF2Model(ProteinFoldingModel):
         self,
         model = None,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
+        data_dir: Optional[str] = None,
     ):
         """Initialize AF2 model (ColabDesign)."""
         self.device = device
+        data_dir = resolve_af_params_dir(data_dir)
         self.model = mk_afdesign_model(
                             protocol="hallucination",
                             use_templates=False,
                             initial_guess=False,
                             use_initial_atom_pos=False,
                             num_recycles=3,
-                            data_dir='~/.mber/af_params',
+                            data_dir=data_dir,
                             use_multimer=False,
                         )
 

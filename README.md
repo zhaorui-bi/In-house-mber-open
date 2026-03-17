@@ -50,6 +50,42 @@ pip install -e protocols
 bash download_weights.sh
 ```
 
+### Custom Weight Paths
+
+mBER now reads weight locations from environment variables at both download time and runtime, so you can move all large model files off `HOME` to a larger disk.
+
+Use one shared root:
+
+```bash
+export MBER_WEIGHTS_DIR=/data/mber_weights
+bash download_weights.sh
+```
+
+Or override each model directory separately:
+
+```bash
+export MBER_AF_PARAMS_DIR=/data/mber_weights/af_params
+export MBER_NBB2_WEIGHTS_DIR=/data/mber_weights/nbb2_weights
+export MBER_HF_HOME=/data/mber_weights/huggingface
+bash download_weights.sh
+```
+
+To keep this across shells, add the exports to `~/.bashrc` or `~/.zshrc`. If you prefer a project-local `.env`, load it before running mBER:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+Supported environment variables:
+- `MBER_WEIGHTS_DIR`: shared root for all mBER weights. Default is `~/.mber`.
+- `MBER_AF_PARAMS_DIR`: AlphaFold2 params directory override.
+- `MBER_NBB2_WEIGHTS_DIR`: NanoBodyBuilder2 weights directory override.
+- `MBER_HF_HOME`: HuggingFace/ESM cache root override.
+
+The same variables are used when mBER loads ESM2, ESMFold, NanoBodyBuilder2, and AlphaFold2, so once the shell variables are set there is no extra runtime flag to pass.
+
 ### Docker
 
 For containerized usage with GPU support, see the [Docker guide](./docker/README.md).

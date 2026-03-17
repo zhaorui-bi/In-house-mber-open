@@ -88,12 +88,13 @@ mBER requires several model weights (~9GB total):
 **Pre-download weights** (recommended):
 
 ```bash
-# Download all required weights to ~/.mber (~9GB, takes 5-10 minutes)
+# Download all required weights to a custom directory (~9GB, takes 5-10 minutes)
+export MBER_WEIGHTS_DIR=/path/to/mber_weights
 bash download_weights.sh
 
 # Then mount when running Docker
 docker run --gpus all \
-  -v ~/.mber:/mber_weights:ro \
+  -v /path/to/mber_weights:/mber_weights:ro \
   ...
 ```
 
@@ -105,7 +106,7 @@ docker run --gpus all ...
 
 # To persist weights for future runs:
 docker run --gpus all \
-  -v ~/.mber:/root/.mber \
+  -v /path/to/mber_weights:/root/.mber \
   ...
 ```
 
@@ -140,7 +141,7 @@ docker run --gpus all \
 |-----------|----------------|---------|
 | Your output directory | `/outputs` | Design results (persisted) |
 | Your input PDB files | `/inputs` | Target structures (read-only) |
-| `~/.mber` | `/mber_weights` | Cached model weights (optional, read-only) |
+| `/path/to/mber_weights` | `/mber_weights` | Cached model weights (optional, read-only) |
 | Settings YAML file | `/settings.yml` | Configuration (optional, read-only) |
 
 ## CLI Options

@@ -25,7 +25,7 @@ from mber.models.colabdesign.loss import (
     add_hbond_loss,
     add_salt_bridge_loss,
 )
-from mber.models.plm import PLM_MODELS
+from mber.models.plm import PLM_MODELS, get_plm_model_kwargs
 from mber.utils.plm_utils import generate_bias_unmasked
 from mber.utils.timing_utils import timer, time_method
 
@@ -181,7 +181,13 @@ class BaseTrajectoryModule(BaseModule):
                 "Initialize ESM model", self._log, design_state.trajectory_data.timings
             ):
                 self._log("Initializing ESM model for bias updates")
-                self.esm_model = PLM_MODELS[self.trajectory_config.plm_model](device="cpu")
+                self.esm_model = PLM_MODELS[self.trajectory_config.plm_model](
+                    device="cpu",
+                    **get_plm_model_kwargs(
+                        self.trajectory_config.plm_model,
+                        hf_home=self.environment_config.hf_home,
+                    ),
+                )
 
     def _setup_loss(self) -> None:
         """Setup and configure loss functions."""

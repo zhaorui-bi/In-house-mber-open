@@ -3,7 +3,7 @@
 # This includes AlphaFold2, NanoBodyBuilder2, and ESM models
 #
 # Usage: bash download_weights.sh [target_dir]
-# Default target: ~/.mber
+# Default target: $MBER_WEIGHTS_DIR or ~/.mber
 #
 # Options:
 #   --skip-esm    Skip ESM model downloads (saves ~5GB, but ESM2 is required)
@@ -12,7 +12,7 @@
 set -e
 
 # Parse arguments
-MBER_DIR="${HOME}/.mber"
+MBER_DIR="${MBER_WEIGHTS_DIR:-${HOME}/.mber}"
 SKIP_ESM=false
 WITH_ESMFOLD=false
 
@@ -37,20 +37,16 @@ done
 echo "=========================================="
 echo "mBER Model Weights Downloader"
 echo "=========================================="
-echo "Target directory: ${MBER_DIR}"
+echo "Weights root: ${MBER_DIR}"
 echo ""
-
-# Create directory structure
-mkdir -p "${MBER_DIR}/af_params"
-mkdir -p "${MBER_DIR}/nbb2_weights"
-mkdir -p "${MBER_DIR}/huggingface"
 
 # ==========================================
 # AlphaFold2 Weights
 # ==========================================
-AF_DIR="${MBER_DIR}/af_params"
+AF_DIR="${MBER_AF_PARAMS_DIR:-${MBER_DIR}/af_params}"
 AF_PARAMS_FILE="${AF_DIR}/alphafold_params_2022-12-06.tar"
 AF_CHECK_FILE="${AF_DIR}/params_model_5_ptm.npz"
+mkdir -p "${AF_DIR}"
 
 echo "[1/4] AlphaFold2 Weights"
 echo "----------------------------------------"
@@ -87,7 +83,25 @@ echo ""
 # ==========================================
 # NanoBodyBuilder2 Weights
 # ==========================================
-NBB2_DIR="${MBER_DIR}/nbb2_weights"
+NBB2_DIR="${MBER_NBB2_WEIGHTS_DIR:-${MBER_DIR}/nbb2_weights}"
+
+# ==========================================
+# HuggingFace / ESM Weights
+# ==========================================
+HF_DIR="${MBER_HF_HOME:-${HF_HOME:-${MBER_DIR}/huggingface}}"
+export HF_HOME="${HF_DIR}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_DIR}/hub}"
+
+echo "Resolved directories:"
+echo "  AlphaFold2: ${AF_DIR}"
+echo "  NanoBodyBuilder2: ${NBB2_DIR}"
+echo "  HuggingFace / ESM: ${HF_DIR}"
+echo ""
+
+# Create directory structure
+mkdir -p "${NBB2_DIR}"
+mkdir -p "${HF_DIR}"
+mkdir -p "${HF_HUB_CACHE}"
 
 echo "[2/4] NanoBodyBuilder2 Weights"
 echo "----------------------------------------"
@@ -138,19 +152,13 @@ else
 fi
 echo ""
 
-# ==========================================
-# ESM2 Model (HuggingFace)
-# ==========================================
-HF_DIR="${MBER_DIR}/huggingface"
-export HF_HOME="${HF_DIR}"
-
 echo "[3/4] ESM2 Model (HuggingFace)"
 echo "----------------------------------------"
 
 if [ "$SKIP_ESM" = true ]; then
     echo "⊘ Skipped (--skip-esm flag)"
 else
-    ESM2_CHECK="${HF_DIR}/hub/models--facebook--esm2_t33_650M_UR50D"
+    ESM2_CHECK="${HF_HUB_CACHE}/models--facebook--esm2_t33_650M_UR50D"
     
     if [ -d "${ESM2_CHECK}" ]; then
         echo "✓ ESM2 model already exists"
@@ -162,11 +170,12 @@ else
         python3 -c "
 import os
 os.environ['HF_HOME'] = '${HF_DIR}'
+os.environ['HF_HUB_CACHE'] = '${HF_HUB_CACHE}'
 from transformers import AutoTokenizer, EsmForMaskedLM
 print('  Downloading tokenizer...')
-AutoTokenizer.from_pretrained('facebook/esm2_t33_650M_UR50D', use_safetensors=False)
+AutoTokenizer.from_pretrained('facebook/esm2_t33_650M_UR50D', use_safetensors=False, cache_dir='${HF_HUB_CACHE}')
 print('  Downloading model weights...')
-EsmForMaskedLM.from_pretrained('facebook/esm2_t33_650M_UR50D', use_safetensors=False)
+EsmForMaskedLM.from_pretrained('facebook/esm2_t33_650M_UR50D', use_safetensors=False, cache_dir='${HF_HUB_CACHE}')
 print('  ✓ ESM2 model installed')
 " 2>&1 | grep -v "^$"
     fi
@@ -180,7 +189,7 @@ echo "[4/4] ESMFold Model (Optional)"
 echo "----------------------------------------"
 
 if [ "$WITH_ESMFOLD" = true ]; then
-    ESMFOLD_CHECK="${HF_DIR}/hub/models--facebook--esmfold_v1"
+    ESMFOLD_CHECK="${HF_HUB_CACHE}/models--facebook--esmfold_v1"
     
     if [ -d "${ESMFOLD_CHECK}" ]; then
         echo "✓ ESMFold model already exists"
@@ -191,9 +200,10 @@ if [ "$WITH_ESMFOLD" = true ]; then
         python3 -c "
 import os
 os.environ['HF_HOME'] = '${HF_DIR}'
+os.environ['HF_HUB_CACHE'] = '${HF_HUB_CACHE}'
 from transformers import EsmForProteinFolding
 print('  Downloading ESMFold model...')
-EsmForProteinFolding.from_pretrained('facebook/esmfold_v1', use_safetensors=False)
+EsmForProteinFolding.from_pretrained('facebook/esmfold_v1', use_safetensors=False, cache_dir='${HF_HUB_CACHE}')
 print('  ✓ ESMFold model installed')
 " 2>&1 | grep -v "^$"
     fi
@@ -211,12 +221,23 @@ echo "=========================================="
 echo "Download Complete!"
 echo "=========================================="
 echo ""
-echo "Weights location: ${MBER_DIR}"
+echo "Resolved directories:"
+echo "  AlphaFold2: ${AF_DIR}"
+echo "  NanoBodyBuilder2: ${NBB2_DIR}"
+echo "  HuggingFace / ESM: ${HF_DIR}"
 echo ""
 echo "Directory sizes:"
-du -sh "${MBER_DIR}"/* 2>/dev/null | sed 's/^/  /'
+du -sh "${AF_DIR}" "${NBB2_DIR}" "${HF_DIR}" 2>/dev/null | sed 's/^/  /'
 echo ""
-echo "To use with Docker, mount this directory:"
+echo "Shell config example (~/.bashrc or ~/.zshrc):"
+echo "  export MBER_WEIGHTS_DIR=${MBER_DIR}"
+echo ""
+echo "Per-model overrides are also supported:"
+echo "  export MBER_AF_PARAMS_DIR=${AF_DIR}"
+echo "  export MBER_NBB2_WEIGHTS_DIR=${NBB2_DIR}"
+echo "  export MBER_HF_HOME=${HF_DIR}"
+echo ""
+echo "To use with Docker, mount the shared root directory:"
 echo "  docker run --gpus all \\"
 echo "    -v ${MBER_DIR}:/mber_weights:ro \\"
 echo "    ..."

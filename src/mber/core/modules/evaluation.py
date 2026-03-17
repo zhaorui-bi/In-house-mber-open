@@ -24,8 +24,8 @@ from mber.models.colabdesign.loss import (
     add_hbond_loss,
     add_salt_bridge_loss,
 )
-from mber.models.plm import PLM_MODELS
-from mber.models.folding import FOLDING_MODELS
+from mber.models.plm import PLM_MODELS, get_plm_model_kwargs
+from mber.models.folding import FOLDING_MODELS, get_folding_model_kwargs
 from mber.models.colabfold.relax import relax_me
 from mber.utils.timing_utils import timer, time_method
 from colabdesign.shared.utils import copy_dict
@@ -128,7 +128,13 @@ class BaseEvaluationModule(BaseModule):
             "Initialize ESM model", self._log, design_state.evaluation_data.timings
         ):
             self._log("Initializing ESM model for sequence evaluation")
-            self.esm_model = PLM_MODELS[self.evaluation_config.plm_model](device="cpu")
+            self.esm_model = PLM_MODELS[self.evaluation_config.plm_model](
+                device="cpu",
+                **get_plm_model_kwargs(
+                    self.evaluation_config.plm_model,
+                    hf_home=self.environment_config.hf_home,
+                ),
+            )
 
         # Add monomer folding model initialization
         with timer(
@@ -141,7 +147,14 @@ class BaseEvaluationModule(BaseModule):
             )
             self.monomer_folding_model = FOLDING_MODELS[
                 self.evaluation_config.monomer_folding_model
-            ]()
+            ](
+                **get_folding_model_kwargs(
+                    self.evaluation_config.monomer_folding_model,
+                    af_params_dir=self.environment_config.af_params_dir,
+                    nbb2_weights_dir=self.environment_config.nbb2_weights_dir,
+                    hf_home=self.environment_config.hf_home,
+                ),
+            )
 
     @time_method()
     def _fold_monomer(self, design_state: DesignState, binder_seq: str) -> str:
