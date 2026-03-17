@@ -144,7 +144,7 @@ pip install setuptools
 If you see an OpenMM or ImmuneBuilder crash mentioning `NumPy 2.x`, `_ARRAY_API`, or a message like `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`, downgrade NumPy in the active environment:
 
 ```bash
-conda install -n mber "numpy<2" --force-reinstall
+conda install -n mber "numpy==1.26.4" --force-reinstall
 ```
 
 If needed, reinstall the dependent binary packages afterward:
@@ -153,6 +153,17 @@ If needed, reinstall the dependent binary packages afterward:
 conda install -n mber openmm==8.0.0 pdbfixer==1.9 --force-reinstall
 python -m pip install --force-reinstall --no-cache-dir ImmuneBuilder
 ```
+
+If you then see mixed ABI import errors such as `numpy._core.umath failed to import`, `ImportError: _multiarray_umath failed to import`, or `ml_dtypes`/`jaxlib` failing immediately on import, the environment is in a partially upgraded state. Reinstall the NumPy/JAX stack together:
+
+```bash
+python -m pip install --force-reinstall --no-cache-dir \
+  "numpy==1.26.4" \
+  "ml_dtypes>=0.4,<1" \
+  "jax[cuda12]==0.5.2"
+```
+
+If the environment is still inconsistent after that, recreate the `mber` conda environment from scratch.
 
 ## Citation
 
