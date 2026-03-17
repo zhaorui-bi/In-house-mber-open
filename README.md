@@ -1,6 +1,6 @@
 # mber - Manifold Binder Engineering and Refinement
 
-An open-source protein design framework for antibody binder design. mBER enables format specific binder design by leveraging structure templates and sequence conditioning in backprop design through AlphaFold-Multimer.
+This repository contains the in-house version of mBER for antibody binder design. It extends the mBER pipeline for internal workflows while preserving the modular template, trajectory, and evaluation structure built around AlphaFold-Multimer-based design.
 
 Preprint with experimental validation: [https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1](https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1)
 ## Graphical Abstract
@@ -35,9 +35,9 @@ Each module is designed to be modular and configurable, with sensible defaults t
 mber has been tested on modern NVIDIA datacenter GPUs, including A10G, A100, L4, L40S, and H100 GPUs. We recommend using a GPU with at least 32GB of VRAM, although design of VHH against small targets should be possible on GPUs with less than 16GB of VRAM. We run mber in a conda environment, which can be created as follows:
 
 ```bash
-# Clone the repository
-git clone https://github.com/manifoldbio/mber-open.git
-cd mber-open
+# Clone this in-house repository
+git clone <your-in-house-mber-repo>
+cd In-house-mber-open
 
 # Install conda environment
 conda env create -f environment.yml
@@ -145,7 +145,7 @@ If you use this code in your research, please cite our paper:
 
 ## Acknowledgements
 
-This project builds on several open-source tools and models:
+This in-house version builds on several open-source tools and models:
 - [AlphaFold](https://github.com/deepmind/alphafold)
 - [ColabDesign](https://github.com/sokrypton/ColabDesign)
 - [ESM](https://github.com/facebookresearch/esm)
