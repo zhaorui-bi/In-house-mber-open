@@ -70,7 +70,7 @@ export MBER_HF_HOME=/data/mber_weights/huggingface
 bash download_weights.sh
 ```
 
-To keep this across shells, add the exports to `~/.bashrc` or `~/.zshrc`. If you prefer a project-local `.env`, load it before running mBER:
+To keep this across shells, add the exports to `~/.bashrc` or `~/.zshrc`. If you prefer a project-local `.env`, use the included `.env.example` as a template and load it before running mBER:
 
 ```bash
 set -a
