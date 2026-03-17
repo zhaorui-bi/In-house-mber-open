@@ -28,6 +28,7 @@ biotite
 # fastpdb
 
 # general requirements
+setuptools
 logomaker
 matplotlib
 numpy

@@ -1,9 +1,6 @@
 from .folding_model_bases import ProteinFoldingModel
-from ImmuneBuilder import NanoBodyBuilder2
-from ImmuneBuilder.NanoBodyBuilder2 import StructureModule, are_weights_ready, download_file, embed_dim, model_urls
-
 import os
-from typing import Optional, List, Tuple, Union
+from typing import Any, Optional, Union
 from pathlib import Path
 import torch
 from mber.utils.model_paths import resolve_nbb2_weights_dir
@@ -14,7 +11,7 @@ class NBB2Model(ProteinFoldingModel):
 
     def __init__(
         self,
-        model: NanoBodyBuilder2 = None,
+        model: Any = None,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
         weights_dir: Optional[str] = None,
     ):
@@ -24,6 +21,18 @@ class NBB2Model(ProteinFoldingModel):
         os.makedirs(weights_dir, exist_ok=True)
 
         if model is None:
+            try:
+                from ImmuneBuilder import NanoBodyBuilder2
+            except ImportError as exc:
+                raise ImportError(
+                    "Failed to import ImmuneBuilder/NanoBodyBuilder2. "
+                    "This usually means the runtime dependency chain for ImmuneBuilder "
+                    "is incomplete or broken, often because `setuptools`/`pkg_resources` "
+                    "is missing in the active environment. "
+                    "Try `python -m pip install --force-reinstall --no-cache-dir 'setuptools<81'` "
+                    "and then reinstall ImmuneBuilder if needed."
+                ) from exc
+
             model = NanoBodyBuilder2(numbering_scheme='raw', weights_dir=weights_dir)
         self.model = model
         self.device = device

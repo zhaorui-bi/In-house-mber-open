@@ -18,6 +18,14 @@ from mber.utils.model_paths import (
 
 class ESM2Model(ProteinLanguageModel):
     """ESM2 implementation of the ProteinLanguageModel interface."""
+
+    @property
+    def id_to_tok(self) -> dict:
+        return self._id_to_tok
+
+    @property
+    def tok_to_id(self) -> dict:
+        return self._tok_to_id
     
     def __init__(
         self,
@@ -49,8 +57,8 @@ class ESM2Model(ProteinLanguageModel):
         self.tokenizer = tokenizer
         self.device = device
         self.hf_home = resolved_paths.hf_home
-        self.id_to_tok = {v: k for k, v in self.tokenizer.get_vocab().items()}
-        self.tok_to_id = self.tokenizer.get_vocab()
+        self._id_to_tok = {v: k for k, v in self.tokenizer.get_vocab().items()}
+        self._tok_to_id = self.tokenizer.get_vocab()
         self.model.to(device)
         
         # Cache amino acid tokens for sampling

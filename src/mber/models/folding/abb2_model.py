@@ -1,6 +1,5 @@
 from .folding_model_bases import ProteinFoldingModel
-from ImmuneBuilder import ABodyBuilder2
-from typing import Optional, List, Tuple, Union
+from typing import Any
 from pathlib import Path
 import torch
 
@@ -10,11 +9,20 @@ class ABB2Model(ProteinFoldingModel):
 
     def __init__(
         self,
-        model: ABodyBuilder2 = None,
+        model: Any = None,
         device: str = "cuda" if torch.cuda.is_available() else "cpu",
     ):
         """Initialize ABodyBuilder2 model."""
         if model is None:
+            try:
+                from ImmuneBuilder import ABodyBuilder2
+            except ImportError as exc:
+                raise ImportError(
+                    "Failed to import ImmuneBuilder/ABodyBuilder2. "
+                    "Please verify ImmuneBuilder and its runtime dependencies are installed "
+                    "in the active environment."
+                ) from exc
+
             model = ABodyBuilder2(numbering_scheme='raw')
         self.model = model
         self.device = device

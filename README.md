@@ -125,6 +125,22 @@ MIT License - See the LICENSE file for details.
 
 We welcome contributions to the mber project. Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) file for details on how to contribute.
 
+## Troubleshooting
+
+If you see `ModuleNotFoundError: No module named 'pkg_resources'` when starting `mber-vhh`, your environment is missing `setuptools`, which is required at runtime by `pdbfixer` and `ImmuneBuilder`.
+
+Install it into the active environment and retry:
+
+```bash
+conda install -n mber setuptools
+```
+
+Or:
+
+```bash
+pip install setuptools
+```
+
 ## Citation
 
 If you use this code in your research, please cite our paper:
