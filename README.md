@@ -1,67 +1,79 @@
-# mber - Manifold Binder Engineering and Refinement
+# 🧬 mBER In-House
 
-This repository contains the in-house version of mBER for antibody binder design. It extends the mBER pipeline for internal workflows while preserving the modular template, trajectory, and evaluation structure built around AlphaFold-Multimer-based design.
+> ✨ A NeurIPS-style in-house research codebase for modular antibody binder design, fast protocol iteration, and reproducible internal experiments.
 
-Preprint with experimental validation: [https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1](https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1)
-## Graphical Abstract
+📄 Preprint with experimental validation: [mBER: Controllable de novo antibody design with million-scale experimental screening](https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1)
+
+## 🎨 Graphical Abstract
 
 ![Graphical Abstract](./assets/mBER_graphical_abstract.png)
 
-## Design Philosophy
+## 📝 Abstract
 
-We aim to create a flexible, modular, and efficient pipeline for the design of protein binders. Due to the variety of protein design problems, the parameters of these pipelines can be highly varied. To account for this, we aim to create a system that can be easily configured to suit the needs of the user. This is achieved via a series of core modules that can be easily swapped in and out, and a configuration system that allows for easy parameter tuning. These core modules include template preparation, trajectory optimization, and evaluation. These modules are defined in the `src/mber/core/modules` directory.
+`mBER` is a modular binder design framework built around a simple research abstraction: separate the design workflow into template preparation, trajectory optimization, and evaluation, then expose each stage through configurable protocols. This repository is the **in-house version** used for internal iteration, workflow tuning, and infrastructure customization. Compared with a minimal public-style release, this version emphasizes operational usability, configurable weight locations, protocol ergonomics, and experiment execution on shared GPU systems.
 
-To avoid the common problem of ballooning config files, we have opted to create a set of protocols which extend the core modules to handle specific design problems. These protocols are stored in the `protocols` directory.
+At a high level, mBER combines structure-aware template construction, sequence optimization with AlphaFold/ColabDesign-style objectives, and downstream binder evaluation into a unified research pipeline. The result is a codebase that is easy to adapt to new design tasks while still remaining explicit about where templates, losses, trajectories, and model backends enter the system.
 
-## Architecture
+## 🌟 Highlights
 
-The mber pipeline is built around three key modules:
+- 🧪 **Research-first design**: built for rapid experimentation, ablation, and protocol iteration.
+- 🧩 **Modular pipeline**: clean separation between `Template`, `Trajectory`, and `Evaluation`.
+- 🧠 **Multiple model backends**: AlphaFold-derived design, ESM-based language modeling, and nanobody folding support.
+- 📦 **Internal usability**: custom weight directories, CLI workflows, Docker support, and resume-friendly outputs.
+- 🚀 **Protocol-oriented structure**: the core engine stays reusable while task-specific logic lives under `protocols/`.
 
-1. **Template** - Prepares target structures, identifies hotspots, and creates initial templates
-2. **Trajectory** - Designs binder sequences using protein folding models and optimization
-3. **Evaluation** - Evaluates designed binders using various metrics
+## 🏗️ Method Overview
 
-Each module is designed to be modular and configurable, with sensible defaults that can be overridden as needed.
+The mBER pipeline is organized around three core stages:
 
-## Documentation
+1. **Template** 🧱
+   Prepares target structures, identifies or ingests hotspots, builds truncations, and initializes binder templates.
+2. **Trajectory** 🎯
+   Runs binder design by optimizing sequence logits and sampling candidate sequences through iterative design trajectories.
+3. **Evaluation** 📏
+   Scores and filters resulting binders using structure-based and sequence-based metrics.
 
-- [Protocols Guide](./protocols/README.md) - How to create and use protocols
-- [Core Components](./src/mber/core/README.md) - Documentation of core functionality
-- [Docker Guide](./docker/README.md) - Run mBER in a container with GPU support
-- [Example Notebooks](./notebooks) - Jupyter notebooks demonstrating usage
+This architecture keeps the codebase close to the way we describe methods in a paper: each stage has a clear role, explicit inputs and outputs, and a protocol layer that defines task-specific defaults.
 
-## Installation
+## 🗂️ Repository Map
 
-mber has been tested on modern NVIDIA datacenter GPUs, including A10G, A100, L4, L40S, and H100 GPUs. We recommend using a GPU with at least 32GB of VRAM, although design of VHH against small targets should be possible on GPUs with less than 16GB of VRAM. We run mber in a conda environment, which can be created as follows:
+- 📚 [Protocols Guide](./protocols/README.md) — how protocols are structured and extended
+- 🧠 [Core Components](./src/mber/core/README.md) — internal architecture and module-level concepts
+- 🐳 [Docker Guide](./docker/README.md) — containerized usage with GPU support
+- 📓 [Notebooks](./notebooks) — exploratory examples and workflow demos
+
+## ⚙️ Installation
+
+mBER has been tested on modern NVIDIA datacenter GPUs, including A10G, A100, L4, L40S, and H100. We recommend at least 32 GB of VRAM for comfortable operation, although smaller targets may work on lower-memory GPUs.
 
 ```bash
 # Clone this in-house repository
 git clone <your-in-house-mber-repo>
 cd In-house-mber-open
 
-# Install conda environment
+# Create the conda environment
 conda env create -f environment.yml
 conda activate mber
 
-# Install mber-protocols (contains the VHH binder design protocol)
+# Install protocol package
 pip install -e protocols
 
-# Download model weights (~9GB: AlphaFold2, NanoBodyBuilder2, ESM2)
+# Download model weights (~9GB for AlphaFold2 + NanoBodyBuilder2 + ESM2)
 bash download_weights.sh
 ```
 
-### Custom Weight Paths
+## 💾 Weight Management
 
-mBER now reads weight locations from environment variables at both download time and runtime, so you can move all large model files off `HOME` to a larger disk.
+This in-house version supports **fully custom model weight locations** for both download-time and runtime. This is especially useful on shared clusters where `HOME` is small but scratch or project storage is large.
 
-Use one shared root:
+### ✅ Recommended: one shared root
 
 ```bash
 export MBER_WEIGHTS_DIR=/data/mber_weights
 bash download_weights.sh
 ```
 
-Or override each model directory separately:
+### 🔧 Optional: per-model overrides
 
 ```bash
 export MBER_AF_PARAMS_DIR=/data/mber_weights/af_params
@@ -70,91 +82,101 @@ export MBER_HF_HOME=/data/mber_weights/huggingface
 bash download_weights.sh
 ```
 
-To keep this across shells, add the exports to `~/.bashrc` or `~/.zshrc`. If you prefer a project-local `.env`, use the included `.env.example` as a template and load it before running mBER:
+### 📄 Project-local `.env`
+
+Use the included `.env.example` as a template:
 
 ```bash
+cp .env.example .env
 set -a
 source .env
 set +a
 ```
 
-Supported environment variables:
-- `MBER_WEIGHTS_DIR`: shared root for all mBER weights. Default is `~/.mber`.
-- `MBER_AF_PARAMS_DIR`: AlphaFold2 params directory override.
-- `MBER_NBB2_WEIGHTS_DIR`: NanoBodyBuilder2 weights directory override.
-- `MBER_HF_HOME`: HuggingFace/ESM cache root override.
+Supported variables:
 
-The same variables are used when mBER loads ESM2, ESMFold, NanoBodyBuilder2, and AlphaFold2, so once the shell variables are set there is no extra runtime flag to pass.
+- `MBER_WEIGHTS_DIR` — shared root for all weights
+- `MBER_AF_PARAMS_DIR` — AlphaFold2 parameter directory
+- `MBER_NBB2_WEIGHTS_DIR` — NanoBodyBuilder2 weight directory
+- `MBER_HF_HOME` — HuggingFace / ESM cache directory
 
-### Docker
+The same variables are used by `download_weights.sh` and by runtime model loading, so the system stays consistent end to end.
 
-For containerized usage with GPU support, see the [Docker guide](./docker/README.md).
+## 🚀 Quick Start
 
-## Usage
-
-## Quick Start: VHH Binder Design CLI tool
-
-We provide the `mber-vhh` command-line interface for VHH (nanobody) binder design:
+### CLI: VHH Binder Design
 
 ```bash
-# Run with an example settings file
+# Example settings file
 mber-vhh --settings ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/vhh_settings_example.yml
 
-# Or use command-line flags
+# Direct CLI invocation
 mber-vhh \
   --input-pdb ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/PDL1.pdb \
   --output-dir ./output/vhh_pdl1_A56 \
   --chains A \
   --hotspots A56
 
-# Or use interactive mode
+# Interactive mode
 mber-vhh --interactive
 ```
 
-See [VHH_CLI.md](./protocols/src/mber_protocols/stable/VHH_binder_design/VHH_CLI.md) for complete documentation on the CLI, including all available options and settings file format.
+📘 Full CLI documentation lives in [VHH_CLI.md](./protocols/src/mber_protocols/stable/VHH_binder_design/VHH_CLI.md).
 
-## Quick Start: VHH Binder Design Notebooks
+### 📓 Notebook Usage
 
-See the [notebooks](./notebooks) for examples of how to use mber in a notebook environment.
+See [notebooks](./notebooks) for exploratory and interactive workflows.
 
-## License
+### 🐳 Docker Usage
 
-MIT License - See the LICENSE file for details.
+For containerized execution with GPU support, see the [Docker guide](./docker/README.md).
 
-## Contributing
+## 🧪 Experiment Notes
 
-We welcome contributions to the mber project. Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) file for details on how to contribute.
+- 🎯 If you manually pass `--hotspots`, those hotspot residues are used directly.
+- 🎲 If hotspots are not provided, the template stage can automatically select them using configurable strategies such as `random`, `top_k`, or `none`.
+- 🖥️ On shared machines, the most reliable way to choose a specific GPU is:
 
-## Troubleshooting
+```bash
+CUDA_VISIBLE_DEVICES=1 mber-vhh ...
+```
 
-If you see `ModuleNotFoundError: No module named 'pkg_resources'` when starting `mber-vhh`, your environment is missing `setuptools`, which is required at runtime by `pdbfixer` and `ImmuneBuilder`.
+Within the process, this makes physical GPU `1` appear as logical `cuda:0`.
 
-Install it into the active environment and retry:
+## 🛠️ Troubleshooting
+
+### `pkg_resources` import error
+
+If you see `ModuleNotFoundError: No module named 'pkg_resources'`, your environment is missing `setuptools` at runtime.
 
 ```bash
 conda install -n mber setuptools
 ```
 
-Or:
+or
 
 ```bash
 pip install setuptools
 ```
 
-If you see an OpenMM or ImmuneBuilder crash mentioning `NumPy 2.x`, `_ARRAY_API`, or a message like `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`, downgrade NumPy in the active environment:
+### NumPy 2.x / OpenMM / ImmuneBuilder crash
+
+If you see `_ARRAY_API`, `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`, or an OpenMM/ImmuneBuilder crash during refinement, downgrade NumPy:
 
 ```bash
 conda install -n mber "numpy==1.26.4" --force-reinstall
 ```
 
-If needed, reinstall the dependent binary packages afterward:
+Then reinstall dependent binary packages if needed:
 
 ```bash
 conda install -n mber openmm==8.0.0 pdbfixer==1.9 --force-reinstall
 python -m pip install --force-reinstall --no-cache-dir ImmuneBuilder
 ```
 
-If you then see mixed ABI import errors such as `numpy._core.umath failed to import`, `ImportError: _multiarray_umath failed to import`, or `ml_dtypes`/`jaxlib` failing immediately on import, the environment is in a partially upgraded state. Reinstall the NumPy/JAX stack together:
+### Mixed NumPy / JAX ABI state
+
+If you see errors such as `numpy._core.umath failed to import`, `ImportError: _multiarray_umath failed to import`, or `ml_dtypes` / `jaxlib` failing on import, reinstall the NumPy and JAX stack together:
 
 ```bash
 python -m pip install --force-reinstall --no-cache-dir \
@@ -163,31 +185,40 @@ python -m pip install --force-reinstall --no-cache-dir \
   "jax[cuda12]==0.5.2"
 ```
 
-If the environment is still inconsistent after that, recreate the `mber` conda environment from scratch.
+If the environment remains inconsistent after that, recreating the `mber` conda environment from scratch is usually the fastest fix.
 
-## Citation
+## 📖 Citation
 
-If you use this code in your research, please cite our paper:
+If you use this code in research, please cite the paper:
 
-```
+```bibtex
 @article {swanson2025mber,
-	author = {Swanson, Erik and Nichols, Michael and Ravichandran, Supriya and Ogden, Pierce},
-	title = {mBER: Controllable de novo antibody design with million-scale experimental screening},
-	elocation-id = {2025.09.26.678877},
-	year = {2025},
-	doi = {10.1101/2025.09.26.678877},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2025/09/28/2025.09.26.678877},
-	eprint = {https://www.biorxiv.org/content/early/2025/09/28/2025.09.26.678877.full.pdf},
-	journal = {bioRxiv}
+  author = {Swanson, Erik and Nichols, Michael and Ravichandran, Supriya and Ogden, Pierce},
+  title = {mBER: Controllable de novo antibody design with million-scale experimental screening},
+  elocation-id = {2025.09.26.678877},
+  year = {2025},
+  doi = {10.1101/2025.09.26.678877},
+  publisher = {Cold Spring Harbor Laboratory},
+  URL = {https://www.biorxiv.org/content/early/2025/09/28/2025.09.26.678877},
+  eprint = {https://www.biorxiv.org/content/early/2025/09/28/2025.09.26.678877.full.pdf},
+  journal = {bioRxiv}
 }
 ```
 
-## Acknowledgements
+## 🙌 Acknowledgements
 
-This in-house version builds on several open-source tools and models:
-- [AlphaFold](https://github.com/deepmind/alphafold)
-- [ColabDesign](https://github.com/sokrypton/ColabDesign)
-- [ESM](https://github.com/facebookresearch/esm)
-- [AbLang](https://github.com/oxpig/AbLang)
-- [ImmuneBuilder](https://github.com/oxpig/ImmuneBuilder)
+This in-house version builds on several excellent open-source tools and models:
+
+- 🔬 [AlphaFold](https://github.com/deepmind/alphafold)
+- 🧠 [ColabDesign](https://github.com/sokrypton/ColabDesign)
+- 🧬 [ESM](https://github.com/facebookresearch/esm)
+- 🧪 [AbLang](https://github.com/oxpig/AbLang)
+- 🏗️ [ImmuneBuilder](https://github.com/oxpig/ImmuneBuilder)
+
+## 📜 License
+
+MIT License. See [LICENSE](./LICENSE) for details.
+
+## 🤝 Contributing
+
+We welcome contributions and internal improvements. See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
