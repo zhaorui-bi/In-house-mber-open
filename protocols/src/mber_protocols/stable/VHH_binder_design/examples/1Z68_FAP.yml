@@ -1,0 +1,39 @@
+output:
+  dir: ./output/1Z68_FAP
+target:
+  pdb: ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/1Z68_FAP.pdb
+  name: 1Z68_FAP
+  chains: "A"
+  hotspots:
+    - "A122"
+    - "A123"
+    - "A124"
+    - "A732"
+    - "A733"
+    - "A735"
+    - "A737"
+    - "A741"
+binder:
+  # FAP blocker design:
+  # use a longer CDR3 than the default template so the paratope has a better chance
+  # to bridge the catalytic rim rather than drifting toward nearby permissive surface patches.
+  masked_sequence: "EVQLVESGGGLVQPGGSLRLSCAASG*********WFRQAPGKEREF***********NADSVKGRFTISRDNAKNTLYLQMNSLRAEDTAVYYC****************WGQGTLVTVSS"
+stopping:
+  # Blocker-like poses are usually harder to find than generic surface binders,
+  # so give this target a larger trajectory budget.
+  num_accepted: 10
+  max_trajectories: 500
+filters:
+  # Keep the acceptance bar slightly elevated without becoming so strict that
+  # the search never yields blocker-like candidates.
+  min_iptm: 0.78
+  min_plddt: 0.72
+  structural_constraints:
+    contact_distance: 4.5
+    groups:
+      - name: catalytic_rim_north
+        residues: ["A122", "A123", "A124"]
+        min_hits: 1
+      - name: catalytic_rim_south
+        residues: ["A732", "A733", "A735", "A737", "A741"]
+        min_hits: 1

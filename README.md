@@ -121,6 +121,24 @@ mber-vhh \
 mber-vhh --interactive
 ```
 
+### In-House Target Examples
+
+```bash
+# CXADR epitope-focused VHH design
+CUDA_VISIBLE_DEVICES=1 \
+  mber-vhh --settings ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/7VYL_CXADR.yml
+
+# FAP dual-side pocket/rim VHH design
+CUDA_VISIBLE_DEVICES=2 \
+  mber-vhh --settings ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/1Z68_FAP.yml
+```
+
+These two settings files already include:
+
+- tuned VHH masked templates with longer CDR3 search space
+- stricter `min_iptm` / `min_plddt` filters
+- structural hotspot constraints to reduce framework-sticking and flexible-region off-target poses
+
 📘 Full CLI documentation lives in [VHH_CLI.md](./protocols/src/mber_protocols/stable/VHH_binder_design/VHH_CLI.md).
 
 ### 📓 Notebook Usage

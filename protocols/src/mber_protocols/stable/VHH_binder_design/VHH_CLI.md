@@ -76,7 +76,23 @@ stopping:
 filters:
   min_iptm: 0.75
   min_plddt: 0.70
+  # Optional: enforce hotspot-contact geometry on the final complex PDB
+  structural_constraints:
+    contact_distance: 4.5
+    groups:
+      - name: primary_hotspots
+        residues: ["A21", "A23", "A24", "A25", "A26", "A27", "A28"]
+        min_hits: 3
+      - name: secondary_hotspots
+        residues: ["A44", "A47", "A48", "A50"]
+        min_hits: 1
 ```
+
+Structural constraint behavior
+- The filter runs after the usual `min_iptm` / `min_plddt` screen and inspects the predicted `complex_pdb`.
+- A hotspot is counted as "hit" when any heavy atom from the binder is within `contact_distance` Angstrom of that target residue.
+- Every group listed under `filters.structural_constraints.groups` must satisfy its own `min_hits`.
+- This is useful for rejecting framework-sticking poses that score well globally but miss the intended epitope geometry.
 
 Resume behavior
 - If `accepted.csv` already has entries, the CLI counts them and only generates the remaining designs to reach `stopping.num_accepted`. If the target is already reached, it exits immediately.
@@ -97,4 +113,3 @@ Given `output_dir`, the CLI writes:
 ```bash
 mber-vhh -h
 ```
-

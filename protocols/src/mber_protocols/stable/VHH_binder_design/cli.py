@@ -23,6 +23,11 @@ from mber_protocols.stable.VHH_binder_design.config import (
 from mber_protocols.stable.VHH_binder_design.template import TemplateModule
 from mber_protocols.stable.VHH_binder_design.trajectory import TrajectoryModule
 from mber_protocols.stable.VHH_binder_design.evaluation import EvaluationModule
+from mber_protocols.stable.VHH_binder_design.structure_constraints import (
+    StructuralConstraintConfig,
+    evaluate_structural_constraints,
+    parse_structural_constraint_config,
+)
 from mber_protocols.stable.VHH_binder_design.state import DesignState, TemplateData
 
 
@@ -269,6 +274,9 @@ def _build_state_from_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     max_trajectories = int(stopping.get("max_trajectories", DEFAULT_MAX_TRAJ))
     min_iptm = float(filters.get("min_iptm", DEFAULT_MIN_IPTM))
     min_plddt = float(filters.get("min_plddt", DEFAULT_MIN_PLDDT))
+    structural_constraints = parse_structural_constraint_config(
+        filters.get("structural_constraints")
+    )
 
     # Use provided target name or default to PDB filename stem
     target_name = tgt.get("name") or str(Path(str(tgt["pdb"]).split("/")[-1]).stem)
@@ -292,6 +300,7 @@ def _build_state_from_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
         "max_trajectories": max_trajectories,
         "min_iptm": min_iptm,
         "min_plddt": min_plddt,
+        "structural_constraints": structural_constraints,
         "skip_animations": out_cfg.get("skip_animations", False),
         "skip_pickle": out_cfg.get("skip_pickle", False),
         "skip_png": out_cfg.get("skip_png", False),
@@ -325,9 +334,19 @@ def _run_one_trajectory(state: DesignState) -> DesignState:
     return state
 
 
-def _accept_binders(state: DesignState, min_iptm: float, min_plddt: float) -> Dict[int, Dict[str, Any]]:
+def _accept_binders(
+    state: DesignState,
+    min_iptm: float,
+    min_plddt: float,
+    structural_constraints: Optional[StructuralConstraintConfig] = None,
+) -> Dict[int, Dict[str, Any]]:
     accepted: Dict[int, Dict[str, Any]] = {}
     binders = state.evaluation_data.binders or []
+    target_chains = {
+        chain.strip()
+        for chain in str(getattr(state.template_data, "region", "") or "").split(",")
+        if chain.strip()
+    }
     for idx, b in enumerate(binders):
         try:
             b_i_ptm = getattr(b, "i_ptm", None)
@@ -335,6 +354,14 @@ def _accept_binders(state: DesignState, min_iptm: float, min_plddt: float) -> Di
             if b_i_ptm is None or b_plddt is None:
                 continue
             if float(b_i_ptm) >= min_iptm and float(b_plddt) >= min_plddt:
+                constraint_ok, constraint_details = evaluate_structural_constraints(
+                    complex_pdb=getattr(b, "complex_pdb", None),
+                    config=structural_constraints,
+                    target_chains=target_chains,
+                )
+                if not constraint_ok:
+                    continue
+
                 accepted[idx] = {
                     "seq": getattr(b, "binder_seq", None),
                     "i_ptm": float(b_i_ptm),
@@ -342,6 +369,7 @@ def _accept_binders(state: DesignState, min_iptm: float, min_plddt: float) -> Di
                     "ptm": getattr(b, "ptm", None),
                     "complex_pdb": getattr(b, "complex_pdb", None),
                     "relaxed_pdb": getattr(b, "relaxed_pdb", None),
+                    "structural_constraints": constraint_details,
                 }
         except Exception:
             continue
@@ -390,6 +418,7 @@ def main() -> None:
     max_trajectories = built["max_trajectories"]
     min_iptm = built["min_iptm"]
     min_plddt = built["min_plddt"]
+    structural_constraints = built["structural_constraints"]
     state: DesignState = built["state"]
     skip_animations = built["skip_animations"]
     skip_pickle = built["skip_pickle"]
@@ -414,7 +443,8 @@ def main() -> None:
         f"Running VHH design: output={output_dir}, chains={state.template_data.region}, hotspots={state.template_data.target_hotspot_residues or 'None'}, "
         f"target_accepted={num_accepted}, existing={existing_accepted}, remaining={remaining_needed}, "
         f"max_trajectories={max_trajectories} (default {DEFAULT_MAX_TRAJ}), "
-        f"min_iptm={min_iptm} (default {DEFAULT_MIN_IPTM}), min_plddt={min_plddt} (default {DEFAULT_MIN_PLDDT})"
+        f"min_iptm={min_iptm} (default {DEFAULT_MIN_IPTM}), min_plddt={min_plddt} (default {DEFAULT_MIN_PLDDT}), "
+        f"structural_constraints={'enabled' if structural_constraints else 'disabled'}"
     )
 
     accepted_count = 0
@@ -433,7 +463,12 @@ def main() -> None:
         )
         traj_name = run_state.trajectory_data.trajectory_name or f"traj_{traj_count}"
 
-        accepted = _accept_binders(run_state, min_iptm=min_iptm, min_plddt=min_plddt)
+        accepted = _accept_binders(
+            run_state,
+            min_iptm=min_iptm,
+            min_plddt=min_plddt,
+            structural_constraints=structural_constraints,
+        )
 
         for idx, info in accepted.items():
             saved_paths = _save_accepted_pdbs(
@@ -468,5 +503,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

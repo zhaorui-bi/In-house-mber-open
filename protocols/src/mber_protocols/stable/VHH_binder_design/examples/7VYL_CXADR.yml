@@ -1,0 +1,43 @@
+output:
+  dir: ./output/7VYL_CXADR
+target:
+  pdb: ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/7VYL_CXADR.pdb
+  name: 7VYL_CXADR
+  chains: "A"
+  hotspots:
+    - "A21"
+    - "A22"
+    - "A23"
+    - "A24"
+    - "A25"
+    - "A26"
+    - "A27"
+    - "A28"
+    - "A44"
+    - "A47"
+    - "A48"
+    - "A50"
+binder:
+  # Competitive CXADR design:
+  # keep framework fixed, keep CDR1/CDR2 near canonical lengths,
+  # and modestly lengthen CDR3 to focus contacts onto the virus-overlap epitope
+  # instead of allowing broad framework-driven surface sticking.
+  masked_sequence: "EVQLVESGGGLVQPGGSLRLSCAASG*********WFRQAPGKEREF***********NADSVKGRFTISRDNAKNTLYLQMNSLRAEDTAVYYC**************WGQGTLVTVSS"
+stopping:
+  # Aim for a manageable batch of accepted binders while keeping enough search depth
+  # to find designs that engage the primary hotspot strip.
+  num_accepted: 10
+  max_trajectories: 300
+filters:
+  # Slightly stricter than the defaults to reduce obvious off-target / weak-interface solutions.
+  min_iptm: 0.78
+  min_plddt: 0.72
+  structural_constraints:
+    contact_distance: 4.5
+    groups:
+      - name: primary_hotspots
+        residues: ["A21", "A23", "A24", "A25", "A26", "A27", "A28"]
+        min_hits: 3
+      - name: secondary_hotspots
+        residues: ["A44", "A47", "A48", "A50"]
+        min_hits: 1
