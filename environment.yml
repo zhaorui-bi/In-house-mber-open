@@ -12,5 +12,9 @@ dependencies:
   - pdbfixer==1.9
   - anarci
   - ffmpeg
+  # Use PyTorch CUDA wheels as an extra index so other pip deps still resolve from PyPI.
+  # Works with conda, mamba, and micromamba. Tested with CUDA 12.8.
   - pip:
-    - -e . --index-url https://download.pytorch.org/whl/cu128 # mBER has been tested on CUDA 12.8, but should work on older versions with certain hardware.
+    - --extra-index-url https://download.pytorch.org/whl/cu128
+    - -e .
+    - -e ./protocols

@@ -136,6 +136,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Pixi local environment prefix (commit pixi.lock when generated)
+.pixi
+
+
 # Spyder project settings
 .spyderproject
 .spyproject

@@ -15,10 +15,14 @@ setup(
     install_requires=requirements,
     author="Erik Swanson",
     author_email="erik@manifold.bio",
-    description="Optional protocols for mber.",
+    description=(
+        "Optional protocols for Theta-mBER (fork of Manifold Bio mBER). "
+        "Upstream: https://github.com/manifoldbio/mber-open"
+    ),
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/manifoldbio/mber",
+    url="https://github.com/zhaorui-bi/Theta-mBER",
+    license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

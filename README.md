@@ -1,79 +1,132 @@
-# 🧬 mBER In-House
+# Theta-mBER
 
-> ✨ A NeurIPS-style in-house research codebase for modular antibody binder design, fast protocol iteration, and reproducible internal experiments.
+> Theta Team **internal fork** of [mBER](https://github.com/manifoldbio/mber-open) (Manifold Binder Engineering and Refinement) for protocol iteration and reproducible experiments on shared GPU clusters.
 
-📄 Preprint with experimental validation: [mBER: Controllable de novo antibody design with million-scale experimental screening](https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1)
+**Upstream:** [manifoldbio/mber-open](https://github.com/manifoldbio/mber-open) by [Manifold Bio](https://www.manifold.bio/).  
+**Original authors:** Erik Swanson, Michael Nichols, Supriya Ravichandran, Pierce Ogden.  
+This repository is **not** an official Manifold Bio release. Theta-mBER retains the upstream MIT license and copyright; Theta Team changes are limited to internal deployment, weight-path handling, environment tooling, and protocol ergonomics.
 
-## 🎨 Graphical Abstract
+Preprint with experimental validation: [mBER: Controllable de novo antibody design with million-scale experimental screening](https://www.biorxiv.org/content/10.1101/2025.09.26.678877v1)
+
+## Graphical Abstract
 
 ![Graphical Abstract](./assets/mBER_graphical_abstract.png)
 
-## 📝 Abstract
+## Abstract
 
-`mBER` is a modular binder design framework built around a simple research abstraction: separate the design workflow into template preparation, trajectory optimization, and evaluation, then expose each stage through configurable protocols. This repository is the **in-house version** used for internal iteration, workflow tuning, and infrastructure customization. Compared with a minimal public-style release, this version emphasizes operational usability, configurable weight locations, protocol ergonomics, and experiment execution on shared GPU systems.
+`mBER` (developed by Manifold Bio) is a modular binder design framework that separates the workflow into template preparation, trajectory optimization, and evaluation, then exposes each stage through configurable protocols. **Theta-mBER** is a Theta Team internal derivative of that open-source codebase, used for cluster deployment, shared weight-path configuration, and protocol iteration. Method credit and scientific priority remain with the original mBER authors and preprint.
 
-At a high level, mBER combines structure-aware template construction, sequence optimization with AlphaFold/ColabDesign-style objectives, and downstream binder evaluation into a unified research pipeline. The result is a codebase that is easy to adapt to new design tasks while still remaining explicit about where templates, losses, trajectories, and model backends enter the system.
+At a high level, mBER combines structure-aware template construction, sequence optimization with AlphaFold/ColabDesign-style objectives, and downstream binder evaluation into a unified research pipeline.
 
-## 🌟 Highlights
+## Highlights
 
-- 🧪 **Research-first design**: built for rapid experimentation, ablation, and protocol iteration.
-- 🧩 **Modular pipeline**: clean separation between `Template`, `Trajectory`, and `Evaluation`.
-- 🧠 **Multiple model backends**: AlphaFold-derived design, ESM-based language modeling, and nanobody folding support.
-- 📦 **Internal usability**: custom weight directories, CLI workflows, Docker support, and resume-friendly outputs.
-- 🚀 **Protocol-oriented structure**: the core engine stays reusable while task-specific logic lives under `protocols/`.
+- **Research-first design**: rapid experimentation, ablation, and protocol iteration
+- **Modular pipeline**: clean separation between `Template`, `Trajectory`, and `Evaluation`
+- **Multiple model backends**: AlphaFold-derived design, ESM language modeling, nanobody folding
+- **Cluster-friendly weights**: single shared root via `MBER_WEIGHTS_DIR`, with optional per-model overrides
+- **Protocol-oriented structure**: reusable core engine with task-specific logic under `protocols/`
 
-## 🏗️ Method Overview
+## Method Overview
 
-The mBER pipeline is organized around three core stages:
+1. **Template** — Prepare target structures, identify or ingest hotspots, build truncations, initialize binder templates.
+2. **Trajectory** — Optimize sequence logits and sample candidates through iterative design trajectories.
+3. **Evaluation** — Score and filter binders with structure-based and sequence-based metrics.
 
-1. **Template** 🧱
-   Prepares target structures, identifies or ingests hotspots, builds truncations, and initializes binder templates.
-2. **Trajectory** 🎯
-   Runs binder design by optimizing sequence logits and sampling candidate sequences through iterative design trajectories.
-3. **Evaluation** 📏
-   Scores and filters resulting binders using structure-based and sequence-based metrics.
+## Repository Map
 
-This architecture keeps the codebase close to the way we describe methods in a paper: each stage has a clear role, explicit inputs and outputs, and a protocol layer that defines task-specific defaults.
+- [Protocols Guide](./protocols/README.md) — how protocols are structured and extended
+- [Core Components](./src/mber/core/README.md) — internal architecture and module-level concepts
+- [Docker Guide](./docker/README.md) — containerized usage with GPU support
+- [Notebooks](./notebooks) — exploratory examples and workflow demos
+- [License](./LICENSE) / [Third-Party Notices](./THIRD_PARTY_NOTICES.md) — MIT + vendored Apache-2.0 / other obligations
 
-## 🗂️ Repository Map
+## Installation
 
-- 📚 [Protocols Guide](./protocols/README.md) — how protocols are structured and extended
-- 🧠 [Core Components](./src/mber/core/README.md) — internal architecture and module-level concepts
-- 🐳 [Docker Guide](./docker/README.md) — containerized usage with GPU support
-- 📓 [Notebooks](./notebooks) — exploratory examples and workflow demos
+Tested on modern NVIDIA datacenter GPUs (A10G, A100, L4, L40S, H100). We recommend at least 32 GB of VRAM for comfortable operation.
 
-## ⚙️ Installation
-
-mBER has been tested on modern NVIDIA datacenter GPUs, including A10G, A100, L4, L40S, and H100. We recommend at least 32 GB of VRAM for comfortable operation, although smaller targets may work on lower-memory GPUs.
+All install paths pin **NumPy 1.26.4** and pull OpenMM / pdbfixer / ANARCI from conda-forge/bioconda. Do not upgrade NumPy to 2.x. PyTorch CUDA 12.8 wheels are installed via an extra index so other pip packages still resolve from PyPI.
 
 ```bash
-# Clone this in-house repository
-git clone <your-in-house-mber-repo>
-cd In-house-mber-open
+git clone https://github.com/zhaorui-bi/Theta-mBER.git
+cd Theta-mBER
+cp .env.example .env
+```
 
-# Create the conda environment
+### Option A: Pixi (recommended)
+
+```bash
+pixi install
+pixi shell
+
+# Weights (pixi also exports MBER_WEIGHTS_DIR for the Theta cluster)
+pixi run check-weights
+# or: pixi run download-weights
+
+pixi run mber-vhh --help
+```
+
+### Option B: Micromamba / Mamba
+
+```bash
+# micromamba (or: mamba env create -f environment.yml)
+micromamba create -y -f environment.yml
+micromamba activate mber
+
+set -a && source .env && set +a
+bash download_weights.sh --check
+```
+
+`environment.yml` already installs both `mber` and `mber-protocols` in editable mode (`mber-vhh` CLI included).
+
+### Option C: Conda
+
+```bash
 conda env create -f environment.yml
 conda activate mber
 
-# Install protocol package
-pip install -e protocols
-
-# Download model weights (~9GB for AlphaFold2 + NanoBodyBuilder2 + ESM2)
-bash download_weights.sh
+set -a && source .env && set +a
+bash download_weights.sh --check
 ```
 
-## 💾 Weight Management
+## Weight Management
 
-This in-house version supports **fully custom model weight locations** for both download-time and runtime. This is especially useful on shared clusters where `HOME` is small but scratch or project storage is large.
+Theta-mBER uses one shared weight root for download-time and runtime resolution.
 
-### ✅ Recommended: one shared root
+### Recommended: shared root on the Theta cluster
 
 ```bash
-export MBER_WEIGHTS_DIR=/data/mber_weights
-bash download_weights.sh
+export MBER_WEIGHTS_DIR=/scratch2/mz32/share/mber_weights
+bash download_weights.sh --check
 ```
 
-### 🔧 Optional: per-model overrides
+Expected layout:
+
+```text
+$MBER_WEIGHTS_DIR/
+  af_params/
+  nbb2_weights/
+  huggingface/
+```
+
+### Project-local `.env`
+
+```bash
+cp .env.example .env
+set -a && source .env && set +a
+```
+
+`download_weights.sh` automatically sources a repo-root `.env` when present.
+
+Supported variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `MBER_WEIGHTS_DIR` | Shared root for all weights |
+| `MBER_AF_PARAMS_DIR` | AlphaFold2 parameter directory |
+| `MBER_NBB2_WEIGHTS_DIR` | NanoBodyBuilder2 weight directory |
+| `MBER_HF_HOME` | HuggingFace / ESM cache directory |
+
+### Optional: per-model overrides
 
 ```bash
 export MBER_AF_PARAMS_DIR=/data/mber_weights/af_params
@@ -82,27 +135,7 @@ export MBER_HF_HOME=/data/mber_weights/huggingface
 bash download_weights.sh
 ```
 
-### 📄 Project-local `.env`
-
-Use the included `.env.example` as a template:
-
-```bash
-cp .env.example .env
-set -a
-source .env
-set +a
-```
-
-Supported variables:
-
-- `MBER_WEIGHTS_DIR` — shared root for all weights
-- `MBER_AF_PARAMS_DIR` — AlphaFold2 parameter directory
-- `MBER_NBB2_WEIGHTS_DIR` — NanoBodyBuilder2 weight directory
-- `MBER_HF_HOME` — HuggingFace / ESM cache directory
-
-The same variables are used by `download_weights.sh` and by runtime model loading, so the system stays consistent end to end.
-
-## 🚀 Quick Start
+## Quick Start
 
 ### CLI: VHH Binder Design
 
@@ -121,7 +154,7 @@ mber-vhh \
 mber-vhh --interactive
 ```
 
-### In-House Target Examples
+### Internal Target Examples
 
 ```bash
 # CXADR epitope-focused VHH design
@@ -133,68 +166,60 @@ CUDA_VISIBLE_DEVICES=2 \
   mber-vhh --settings ./protocols/src/mber_protocols/stable/VHH_binder_design/examples/1Z68_FAP.yml
 ```
 
-These two settings files already include:
+These settings files include tuned VHH masked templates, stricter `min_iptm` / `min_plddt` filters, and structural hotspot constraints.
 
-- tuned VHH masked templates with longer CDR3 search space
-- stricter `min_iptm` / `min_plddt` filters
-- structural hotspot constraints to reduce framework-sticking and flexible-region off-target poses
+Full CLI documentation: [VHH_CLI.md](./protocols/src/mber_protocols/stable/VHH_binder_design/VHH_CLI.md).
 
-📘 Full CLI documentation lives in [VHH_CLI.md](./protocols/src/mber_protocols/stable/VHH_binder_design/VHH_CLI.md).
+### Notebooks
 
-### 📓 Notebook Usage
+See [notebooks](./notebooks) for exploratory workflows.
 
-See [notebooks](./notebooks) for exploratory and interactive workflows.
+### Docker
 
-### 🐳 Docker Usage
+For containerized GPU runs, see the [Docker guide](./docker/README.md). Mount the same weight root at `/mber_weights`:
 
-For containerized execution with GPU support, see the [Docker guide](./docker/README.md).
+```bash
+docker run --gpus all \
+  -v /scratch2/mz32/share/mber_weights:/mber_weights:ro \
+  -e MBER_WEIGHTS_DIR=/mber_weights \
+  ...
+```
 
-## 🧪 Experiment Notes
+## Experiment Notes
 
-- 🎯 If you manually pass `--hotspots`, those hotspot residues are used directly.
-- 🎲 If hotspots are not provided, the template stage can automatically select them using configurable strategies such as `random`, `top_k`, or `none`.
-- 🖥️ On shared machines, the most reliable way to choose a specific GPU is:
+- If you pass `--hotspots`, those residues are used directly.
+- If hotspots are omitted, the template stage can select them with strategies such as `random`, `top_k`, or `none`.
+- On shared machines, pin a GPU with:
 
 ```bash
 CUDA_VISIBLE_DEVICES=1 mber-vhh ...
 ```
 
-Within the process, this makes physical GPU `1` appear as logical `cuda:0`.
+Within the process, physical GPU `1` appears as logical `cuda:0`.
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### `pkg_resources` import error
 
-If you see `ModuleNotFoundError: No module named 'pkg_resources'`, your environment is missing `setuptools` at runtime.
-
 ```bash
 conda install -n mber setuptools
-```
-
-or
-
-```bash
+# or
 pip install setuptools
 ```
 
 ### NumPy 2.x / OpenMM / ImmuneBuilder crash
 
-If you see `_ARRAY_API`, `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`, or an OpenMM/ImmuneBuilder crash during refinement, downgrade NumPy:
+If you see `_ARRAY_API` or `compiled using NumPy 1.x cannot be run in NumPy 2.x`:
 
 ```bash
 conda install -n mber "numpy==1.26.4" --force-reinstall
-```
-
-Then reinstall dependent binary packages if needed:
-
-```bash
 conda install -n mber openmm==8.0.0 pdbfixer==1.9 --force-reinstall
 python -m pip install --force-reinstall --no-cache-dir ImmuneBuilder
 ```
 
 ### Mixed NumPy / JAX ABI state
 
-If you see errors such as `numpy._core.umath failed to import`, `ImportError: _multiarray_umath failed to import`, or `ml_dtypes` / `jaxlib` failing on import, reinstall the NumPy and JAX stack together:
+If `numpy._core.umath`, `_multiarray_umath`, `ml_dtypes`, or `jaxlib` fail on import:
 
 ```bash
 python -m pip install --force-reinstall --no-cache-dir \
@@ -203,11 +228,20 @@ python -m pip install --force-reinstall --no-cache-dir \
   "jax[cuda12]==0.5.2"
 ```
 
-If the environment remains inconsistent after that, recreating the `mber` conda environment from scratch is usually the fastest fix.
+If the environment remains inconsistent, recreate the `mber` conda environment from scratch.
 
-## 📖 Citation
+### Weights not found
 
-If you use this code in research, please cite the paper:
+```bash
+set -a && source .env && set +a
+bash download_weights.sh --check
+```
+
+Confirm `MBER_WEIGHTS_DIR` points at a directory that contains `af_params/`, `nbb2_weights/`, and `huggingface/`.
+
+## Citation
+
+If you use mBER / Theta-mBER in research, please cite the **original mBER paper** (Manifold Bio):
 
 ```bibtex
 @article {swanson2025mber,
@@ -223,20 +257,38 @@ If you use this code in research, please cite the paper:
 }
 ```
 
-## 🙌 Acknowledgements
+Do **not** cite Theta-mBER as a substitute for the upstream method paper. If you specifically used this fork's infrastructure changes, you may additionally note the repository URL in methods, while still citing Swanson et al.
 
-This in-house version builds on several excellent open-source tools and models:
+## Acknowledgements
 
-- 🔬 [AlphaFold](https://github.com/deepmind/alphafold)
-- 🧠 [ColabDesign](https://github.com/sokrypton/ColabDesign)
-- 🧬 [ESM](https://github.com/facebookresearch/esm)
-- 🧪 [AbLang](https://github.com/oxpig/AbLang)
-- 🏗️ [ImmuneBuilder](https://github.com/oxpig/ImmuneBuilder)
+- **Upstream mBER:** [Manifold Bio](https://www.manifold.bio/) — [manifoldbio/mber-open](https://github.com/manifoldbio/mber-open). Copyright (c) 2025 Manifold Bio.
+- Community VHH CLI contributions (e.g. Aaron Ring / @cytokineking), as present in the upstream lineage.
+- Supporting open-source tools used by mBER:
+  - [AlphaFold](https://github.com/deepmind/alphafold)
+  - [ColabDesign](https://github.com/sokrypton/ColabDesign)
+  - [ESM](https://github.com/facebookresearch/esm)
+  - [AbLang](https://github.com/oxpig/AbLang)
+  - [ImmuneBuilder](https://github.com/oxpig/ImmuneBuilder)
 
-## 📜 License
+## License and copyright
 
-MIT License. See [LICENSE](./LICENSE) for details.
+This project is a **derivative work** of Manifold Bio's mBER, redistributed under the same **MIT License**.
 
-## 🤝 Contributing
+- Upstream copyright: **Copyright (c) 2025 Manifold Bio** (see [LICENSE](./LICENSE) and [manifoldbio/mber-open](https://github.com/manifoldbio/mber-open))
+- Theta Team modifications: **Copyright (c) 2026 Theta Team**
+- The MIT license text and Manifold Bio copyright notice are retained as required
+- `mBER`, Manifold Bio branding, and the scientific method remain attributed to the original authors; Theta-mBER does not claim ownership of the upstream project
 
-We welcome contributions and internal improvements. See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
+**Third-party / vendored code** (must be preserved when redistributing):
+
+| Component | Path | License |
+|-----------|------|---------|
+| AlphaFold (DeepMind) | [`src/mber/models/alphafold/`](./src/mber/models/alphafold/) | Apache-2.0 ([LICENSE](./src/mber/models/alphafold/LICENSE)) |
+| BindCraft-adapted losses | [`src/mber/models/colabdesign/loss.py`](./src/mber/models/colabdesign/loss.py) | MIT |
+| ColabDesign (dependency) | external package | Beerware (upstream `LICENSE.txt`) |
+
+Full terms: [LICENSE](./LICENSE). Detailed notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). Model weights downloaded separately are **not** covered by this MIT license.
+
+## Contributing
+
+Internal contributions from the Theta Team are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md). When contributing, preserve upstream copyright headers and do not remove Manifold Bio attribution from redistributed sources.

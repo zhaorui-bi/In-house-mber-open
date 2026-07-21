@@ -1,0 +1,89 @@
+# Theta-mBER Pixi environment
+#
+#   pixi install                 # create/update the default CUDA env
+#   pixi shell                   # enter the env
+#   pixi run check-weights       # verify shared model weights
+#   pixi run mber-vhh --help     # VHH binder design CLI
+
+[workspace]
+name = "theta-mber"
+version = "1.0.0"
+description = "Theta Team internal fork of Manifold Bio mBER (MIT; see LICENSE and THIRD_PARTY_NOTICES.md)"
+license = "MIT"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+[system-requirements]
+cuda = "12"
+
+# ── Conda packages (OpenMM / ANARCI stack must stay on NumPy 1.x) ─────────────
+
+[dependencies]
+python = "3.11.*"
+pip = "*"
+setuptools = "*"
+numpy = "==1.26.4"
+openmm = "==8.0.0"
+pdbfixer = "==1.9"
+anarci = "*"
+ffmpeg = "*"
+pyyaml = "*"
+
+# ── PyPI (CUDA wheels via PyTorch extra index) ───────────────────────────────
+
+[pypi-options]
+index-url = "https://pypi.org/simple"
+extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
+index-strategy = "unsafe-best-match"
+
+[pypi-dependencies]
+# Editable packages
+mber = { path = ".", editable = true }
+mber-protocols = { path = "protocols", editable = true }
+
+# Torch / HF (CUDA 12.8 wheels from the PyTorch extra index)
+torch = { version = "==2.7.1+cu128" }
+torchvision = { version = "==0.22.1+cu128" }
+torchaudio = { version = "==2.7.1+cu128" }
+transformers = "*"
+
+# ColabDesign + JAX stack (keep NumPy 1.26.x compatible)
+colabdesign = { git = "https://github.com/sokrypton/ColabDesign.git", rev = "d024c4e" }
+jax = { version = "==0.5.2", extras = ["cuda12"] }
+flax = "<0.10.0"
+ml-dtypes = ">=0.4,<1"
+
+# Antibody / folding helpers
+ablang2 = "*"
+ImmuneBuilder = "*"
+
+# Structure / bio
+freesasa = "*"
+mdtraj = "*"
+biopython = "*"
+biotite = "*"
+
+# General
+logomaker = "*"
+matplotlib = "*"
+pandas = "*"
+pyarrow = "*"
+boto3 = "*"
+
+# Notebooks
+ipywidgets = "*"
+ipykernel = "*"
+nbconvert = "*"
+ipython = "*"
+
+# ── Activation (Theta cluster defaults; override via .env if needed) ─────────
+
+[activation.env]
+MBER_WEIGHTS_DIR = "/scratch2/mz32/share/mber_weights"
+
+# ── Tasks ────────────────────────────────────────────────────────────────────
+
+[tasks]
+check-weights = "bash download_weights.sh --check"
+download-weights = "bash download_weights.sh"
+mber-vhh = "mber-vhh"

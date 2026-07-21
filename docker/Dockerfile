@@ -1,11 +1,11 @@
-# mBER Docker Image
+# Theta-mBER Docker Image
 # Runs mBER VHH binder design in CLI mode with CUDA 12.8 support
 #
 # Build from repo root:
-#   docker build -t mber:latest -f docker/Dockerfile .
+#   docker build -t theta-mber:latest -f docker/Dockerfile .
 #
 # Build with weights included (~9GB larger, no mounting needed):
-#   docker build -t mber:latest -f docker/Dockerfile --build-arg INCLUDE_WEIGHTS=true .
+#   docker build -t theta-mber:latest -f docker/Dockerfile --build-arg INCLUDE_WEIGHTS=true .
 
 FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04
 
@@ -50,25 +50,27 @@ SHELL ["conda", "run", "-n", "mber", "/bin/bash", "-c"]
 RUN conda run -n mber pip install -e protocols
 
 # Set up entrypoint script
-RUN chmod +x /app/docker/docker-entrypoint.sh
+RUN chmod +x /app/docker/docker-entrypoint.sh /app/download_weights.sh
 
 # Create directories for volume mounts
-RUN mkdir -p /mber_weights /outputs /inputs /root/.mber
+RUN mkdir -p /mber_weights /outputs /inputs
 
-# Set environment variables
+# Unified weight root used by download script, runtime, and HuggingFace cache
 ENV HOME=/root
 ENV MBER_WEIGHTS_DIR=/mber_weights
-ENV HF_HOME=/root/.mber/huggingface
+ENV MBER_HF_HOME=/mber_weights/huggingface
+ENV HF_HOME=/mber_weights/huggingface
+ENV HF_HUB_CACHE=/mber_weights/huggingface/hub
 ENV HF_HUB_OFFLINE=1
 
 # Optionally download weights at build time
 # This makes the image ~9GB larger but eliminates the need to mount weights
 RUN if [ "$INCLUDE_WEIGHTS" = "true" ]; then \
     echo "Downloading weights (this will take several minutes)..." && \
-    conda run -n mber bash /app/download_weights.sh /root/.mber && \
-    echo "Weights included in image at /root/.mber"; \
+    conda run -n mber bash /app/download_weights.sh /mber_weights && \
+    echo "Weights included in image at /mber_weights"; \
     else \
-    echo "Weights not included. Mount at runtime with -v ~/.mber:/mber_weights:ro"; \
+    echo "Weights not included. Mount at runtime with -v /path/to/mber_weights:/mber_weights:ro"; \
     fi
 
 ENTRYPOINT ["/app/docker/docker-entrypoint.sh"]

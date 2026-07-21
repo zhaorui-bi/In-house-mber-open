@@ -1,3 +1,9 @@
+"""Thin wrapper around vendored AlphaFold Amber relaxation.
+
+AlphaFold code under ``mber.models.alphafold`` is Apache-2.0
+(DeepMind Technologies Limited). See ``mber/models/alphafold/LICENSE``.
+"""
+
 from pathlib import Path
 
 def relax_me(

@@ -28,6 +28,19 @@ BaseEnvironmentConfig = CONFIG_MODULE.BaseEnvironmentConfig
 
 
 class ModelPathResolutionTests(unittest.TestCase):
+    def test_default_root_is_home_mber(self) -> None:
+        resolved = resolve_model_path_config(
+            env={
+                "HOME": "/tmp/home",
+            }
+        )
+
+        self.assertEqual(resolved.weights_root_dir, "/tmp/home/.mber")
+        self.assertEqual(resolved.af_params_dir, "/tmp/home/.mber/af_params")
+        self.assertEqual(resolved.nbb2_weights_dir, "/tmp/home/.mber/nbb2_weights")
+        self.assertEqual(resolved.hf_home, "/tmp/home/.mber/huggingface")
+        self.assertEqual(resolved.hf_hub_cache, "/tmp/home/.mber/huggingface/hub")
+
     def test_shared_root_env_resolves_all_subdirectories(self) -> None:
         resolved = resolve_model_path_config(
             env={
@@ -42,6 +55,30 @@ class ModelPathResolutionTests(unittest.TestCase):
         self.assertEqual(resolved.hf_home, "/mnt/mber_weights/huggingface")
         self.assertEqual(resolved.hf_hub_cache, "/mnt/mber_weights/huggingface/hub")
 
+    def test_shared_root_takes_precedence_over_ambient_hf_home(self) -> None:
+        resolved = resolve_model_path_config(
+            env={
+                "HOME": "/tmp/home",
+                "MBER_WEIGHTS_DIR": "/mnt/mber_weights",
+                "HF_HOME": "/scratch/global_hf",
+            }
+        )
+
+        self.assertEqual(resolved.hf_home, "/mnt/mber_weights/huggingface")
+        self.assertEqual(resolved.hf_hub_cache, "/mnt/mber_weights/huggingface/hub")
+
+    def test_ambient_hf_home_used_when_no_shared_root(self) -> None:
+        resolved = resolve_model_path_config(
+            env={
+                "HOME": "/tmp/home",
+                "HF_HOME": "/scratch/global_hf",
+            }
+        )
+
+        self.assertEqual(resolved.weights_root_dir, "/tmp/home/.mber")
+        self.assertEqual(resolved.hf_home, "/scratch/global_hf")
+        self.assertEqual(resolved.hf_hub_cache, "/scratch/global_hf/hub")
+
     def test_individual_overrides_take_precedence(self) -> None:
         resolved = resolve_model_path_config(
             env={
@@ -50,6 +87,7 @@ class ModelPathResolutionTests(unittest.TestCase):
                 "MBER_AF_PARAMS_DIR": "/ssd/af_params",
                 "MBER_NBB2_WEIGHTS_DIR": "/ssd/nbb2_weights",
                 "MBER_HF_HOME": "/ssd/hf_home",
+                "HF_HOME": "/scratch/global_hf",
             }
         )
 

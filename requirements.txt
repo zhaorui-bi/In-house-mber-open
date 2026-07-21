@@ -1,4 +1,4 @@
-# torch requirements
+# torch requirements (resolved via PyTorch CUDA extra-index in environment.yml)
 torch>=2.7.1
 torchvision
 torchaudio
@@ -14,13 +14,12 @@ flax<0.10.0
 # ablang2
 ablang2
 
-# ImmuneBuilder (openmm, pdbfixer, anarci in conda env)
+# ImmuneBuilder (openmm, pdbfixer, anarci provided by conda env)
 ImmuneBuilder
 
 # extra MD requirements
 freesasa
 mdtraj
-pdbfixer
 
 # pdb and bio requirements
 biopython

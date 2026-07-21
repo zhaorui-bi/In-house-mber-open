@@ -13,7 +13,13 @@ class _mber_af_loss(_af_loss):
 
 
 ###
-# `add_rg_loss`, `add_i_ptm_loss`, `add_helix_loss`, `add_termini_distance_loss` are adapted from BindCraft: (https://github.com/martinpacesa/BindCraft/blob/main/functions/colabdesign_utils.py)
+# The following helpers are adapted from BindCraft
+# (https://github.com/martinpacesa/BindCraft/blob/main/functions/colabdesign_utils.py):
+#   add_rg_loss, add_i_ptm_loss, add_helix_loss, add_termini_distance_loss
+#
+# BindCraft is MIT licensed:
+#   Copyright (c) 2024 Martin Pacesa
+# Retain this notice when redistributing substantial portions of the adapted code.
 ###
 
 # Define radius of gyration loss for colabdesign

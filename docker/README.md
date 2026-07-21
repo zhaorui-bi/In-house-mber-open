@@ -1,6 +1,6 @@
-# mBER Docker
+# Theta-mBER Docker
 
-Run mBER VHH binder design in a containerized environment with GPU support.
+Run Theta Team internal mBER VHH binder design in a containerized environment with GPU support.
 
 ## Prerequisites
 
@@ -21,28 +21,28 @@ docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi
 From the repository root (takes 5-10 minutes):
 
 ```bash
-docker build -t mber:latest -f docker/Dockerfile .
+docker build -t theta-mber:latest -f docker/Dockerfile .
 ```
 
 **Or build with weights included** (~30GB image, no mounting needed):
 
 ```bash
-docker build -t mber:with-weights -f docker/Dockerfile --build-arg INCLUDE_WEIGHTS=true .
+docker build -t theta-mber:with-weights -f docker/Dockerfile --build-arg INCLUDE_WEIGHTS=true .
 ```
 
 ### 2. Run the PDL1 Example
-
-This example designs VHH binders against PDL1 (included in the repo):
 
 ```bash
 # Create output directory
 mkdir -p output
 
-# Run design (weights will auto-download on first run, ~9GB)
+# Recommended: mount the shared Theta weight root
 docker run --gpus all \
   -v $(pwd)/output:/outputs \
   -v $(pwd)/protocols/src/mber_protocols/stable/VHH_binder_design/examples:/inputs:ro \
-  mber:latest \
+  -v /scratch2/mz32/share/mber_weights:/mber_weights:ro \
+  -e MBER_WEIGHTS_DIR=/mber_weights \
+  theta-mber:latest \
   --input-pdb /inputs/PDL1.pdb \
   --output-dir /outputs/pdl1_test \
   --chains A \
@@ -58,7 +58,9 @@ Results will be in `output/pdl1_test/Accepted/`.
 docker run --gpus all \
   -v /path/to/your/outputs:/outputs \
   -v /path/to/your/inputs:/inputs:ro \
-  mber:latest \
+  -v /scratch2/mz32/share/mber_weights:/mber_weights:ro \
+  -e MBER_WEIGHTS_DIR=/mber_weights \
+  theta-mber:latest \
   --input-pdb /inputs/your_target.pdb \
   --output-dir /outputs/my_design \
   --chains A \
@@ -74,62 +76,60 @@ docker run --gpus all \
   -v $(pwd)/output:/outputs \
   -v $(pwd)/my_inputs:/inputs:ro \
   -v $(pwd)/my_settings.yml:/settings.yml:ro \
-  mber:latest \
+  -v /scratch2/mz32/share/mber_weights:/mber_weights:ro \
+  -e MBER_WEIGHTS_DIR=/mber_weights \
+  theta-mber:latest \
   --settings /settings.yml
 ```
 
 ## Model Weights
 
-mBER requires several model weights (~9GB total):
+mBER requires several model weights (~9GB total for the default VHH path):
 - **AlphaFold2** (~3.5GB) - Structure prediction
 - **NanoBodyBuilder2** (~0.7GB) - VHH structure folding
 - **ESM2** (~5GB) - Protein language model
 
-**Pre-download weights** (recommended):
+The container treats **`/mber_weights`** as the single weight root (`MBER_WEIGHTS_DIR`). Mount a host directory that already contains:
+
+```text
+mber_weights/
+  af_params/
+  nbb2_weights/
+  huggingface/
+```
+
+**Theta cluster shared root (recommended):**
 
 ```bash
-# Download all required weights to a custom directory (~9GB, takes 5-10 minutes)
-export MBER_WEIGHTS_DIR=/path/to/mber_weights
-bash download_weights.sh
+export MBER_WEIGHTS_DIR=/scratch2/mz32/share/mber_weights
+bash download_weights.sh --check
 
-# Then mount when running Docker
 docker run --gpus all \
-  -v /path/to/mber_weights:/mber_weights:ro \
+  -v ${MBER_WEIGHTS_DIR}:/mber_weights:ro \
+  -e MBER_WEIGHTS_DIR=/mber_weights \
   ...
 ```
 
-**Or let Docker download on first run:**
+If required files are missing under `/mber_weights`, the entrypoint will call `download_weights.sh` automatically.
 
-```bash
-# First run: weights download inside container (not persisted!)
-docker run --gpus all ...
-
-# To persist weights for future runs:
-docker run --gpus all \
-  -v /path/to/mber_weights:/root/.mber \
-  ...
-```
-
-**Note:** If ESMFold is needed (not used by default VHH protocol), add `--with-esmfold` to download an additional ~16GB.
+**Note:** If ESMFold is needed (not used by the default VHH protocol), add `--with-esmfold` when downloading an additional ~16GB.
 
 ## Build Options
 
 | Option | Image Size | Runtime Requirement |
 |--------|-----------|---------------------|
-| Default build | ~22GB | Mount weights or auto-downloads on first run (~9GB) |
-| `--build-arg INCLUDE_WEIGHTS=true` | ~30GB | No mounting needed, weights built-in |
+| Default build | ~22GB | Mount weights at `/mber_weights` or allow first-run download |
+| `--build-arg INCLUDE_WEIGHTS=true` | ~30GB | No mounting needed, weights built into `/mber_weights` |
 
 **Build with weights included:**
 
 ```bash
-# Larger image (~30GB) but simpler to run - no weight mounting needed
-docker build -t mber:with-weights -f docker/Dockerfile --build-arg INCLUDE_WEIGHTS=true .
+docker build -t theta-mber:with-weights -f docker/Dockerfile --build-arg INCLUDE_WEIGHTS=true .
 
-# Run without mounting weights
 docker run --gpus all \
   -v $(pwd)/output:/outputs \
   -v $(pwd)/inputs:/inputs:ro \
-  mber:with-weights \
+  theta-mber:with-weights \
   --input-pdb /inputs/target.pdb \
   --output-dir /outputs/my_run \
   --chains A
@@ -141,7 +141,7 @@ docker run --gpus all \
 |-----------|----------------|---------|
 | Your output directory | `/outputs` | Design results (persisted) |
 | Your input PDB files | `/inputs` | Target structures (read-only) |
-| `/path/to/mber_weights` | `/mber_weights` | Cached model weights (optional, read-only) |
+| Shared mBER weight root | `/mber_weights` | Model weights (read-only recommended) |
 | Settings YAML file | `/settings.yml` | Configuration (optional, read-only) |
 
 ## CLI Options
